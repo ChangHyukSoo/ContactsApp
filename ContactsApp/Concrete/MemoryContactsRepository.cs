@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Linq;
 using System.Threading.Tasks;
 using ContactsApp.Abstract;
 using ContactsApp.Entity;
@@ -63,24 +65,67 @@ namespace ContactsApp.Concrete
             };
         }
 
-        public Task<bool> AddContactAsync(Contact contactToAdd)
+        public async Task<bool> AddContactAsync(Contact contactToAdd)
         {
-            throw new NotImplementedException();
+            return await Task.Factory.StartNew(() =>
+            {
+                contactToAdd.Id = contacts.Count() + 1;
+                contacts.Add(contactToAdd);
+                return true;
+            });
         }
 
-        public Task<bool> DeleteContactAsync(Contact contactToDelete)
+        public async Task<bool> DeleteContactAsync(Contact contactToDelete)
         {
-            throw new NotImplementedException();
+            return await Task.Factory.StartNew(() =>
+            {
+                var result = (from contact in contacts
+                                  where contact.Id != contactToDelete.Id
+                                  select contact);
+                if (result != null)
+                {
+                    contacts = new ObservableCollection<Contact>(result);
+                    contactToDelete = null;
+                }
+                return result != null;
+            });
+
         }
 
-        public Task<ObservableCollection<Contact>> GetContactsAsync(string firstName, string lastName)
+        public async Task<ObservableCollection<Contact>> GetContactsAsync(string firstName, string lastName)
         {
-            throw new NotImplementedException();
+            return await Task.Factory.StartNew(() =>
+            {
+                IEnumerable<Contact> result = from contact in contacts
+                                              where
+contact.FirstName.ToUpper().Contains(firstName.ToUpper()) &&
+contact.LastName.ToUpper().Contains(lastName.ToUpper())
+                                              select contact;
+                ObservableCollection<Contact> tmp =
+                new ObservableCollection<Contact>(result);
+
+                return tmp;
+            });
+            
         }
 
-        public Task<bool> UpdateContactAsync(Contact contactToUpdate)
+        public async Task<bool> UpdateContactAsync(Contact contactToUpdate)
         {
-            throw new NotImplementedException();
+            return await Task.Factory.StartNew(() =>
+            {
+                Contact result = (from contact in contacts
+                                  where contact.Id == contactToUpdate.Id
+                                  select contact).FirstOrDefault();
+                if (result != null)
+                {
+                    contactToUpdate.FirstName = result.FirstName;
+                    contactToUpdate.LastName = result.LastName;
+                    contactToUpdate.Email = result.Email;
+                    contactToUpdate.Tel = result.Tel;
+                    contactToUpdate.Hobbies = result.Hobbies;
+                }
+                return result != null;
+            });
         }
     }
 }
